@@ -1,6 +1,11 @@
 export interface TemplateCardProps {
-  id: string;
+  id: number;
   image: string;
   title: string;
-  integrations: string[]; // ["vk", "telegram", ...]
+  integrations: string[];
+  price: number;
+  category: string;
+  averageRating: number;
+  totalSales: number;
+  description: string;
 }

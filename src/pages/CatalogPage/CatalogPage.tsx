@@ -23,7 +23,7 @@ const CatalogPage = () => {
   const loadTemplates = useCallback(async (page: number) => {
     setLoading(true);
     const data = await CatalogService.getTemplates(page, PAGE_SIZE);
-    setTemplates(data);
+    setTemplates(data.content);
     setLoading(false);
   }, []);
 

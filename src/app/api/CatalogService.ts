@@ -1,98 +1,64 @@
+import axiosInstance from "./axios";
 import { TemplateCardProps } from "@entities/TemplateCard/types";
 
 export interface BotDetails {
-  id: string;
-  title: string;
+  id: number;
   name: string;
-  image: string;
-  price: number;
-  oldPrice?: number;
-  rating: number;
   description: string;
-  features: string;
-  integrations: string[];
-  advantages: string;
-  tech: string;
-  usage: string;
-  createdAt: Date;
-  isActive: boolean;
+  detailedDescription: string;
+  price: number;
+  category: string;
+  tags: string[];
+  features: string[];
+  version: string;
+  compatibility: string;
+  supportContacts: string;
+  averageRating: number;
+  totalSales: number;
+  previewImageUrl: string;
+  demoVideoUrl: string;
+  seller: {
+    id: number;
+    username: string;
+    rating: number;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GetTemplatesResponse {
+  content: TemplateCardProps[];
+  totalPages: number;
+  totalElements: number;
+  currentPage: number;
 }
 
 export class CatalogService {
   static async getTemplates(
-    page: number = 1,
-    pageSize: number = 10
-  ): Promise<TemplateCardProps[]> {
-    // Мок-данные
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([
-          {
-            id: "1",
-            image:
-              "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80",
-            title: "Чат-бот для консультаций в сфере туризма и путешествий",
-            integrations: ["vk", "telegram", "instagram", "youtube"],
-          },
-          {
-            id: "2",
-            image:
-              "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80",
-            title: "Чат-бот для консультаций в сфере туризма и путешествий",
-            integrations: ["vk", "telegram", "instagram", "youtube"],
-          },
-          {
-            id: "3",
-            image:
-              "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80",
-            title: "Чат-бот для консультаций в сфере туризма и путешествий",
-            integrations: ["vk", "telegram", "youtube"],
-          },
-          {
-            id: "4",
-            image:
-              "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80",
-            title: "Чат-бот для консультаций в сфере туризма и путешествий",
-            integrations: ["vk", "telegram", "instagram", "youtube"],
-          },
-          {
-            id: "5",
-            image:
-              "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80",
-            title: "Чат-бот для консультаций в сфере туризма и путешествий",
-            integrations: ["vk", "telegram", "instagram", "youtube"],
-          },
-        ]);
-      }, 500);
+    page: number = 0,
+    size: number = 20,
+    category?: string,
+    sort?: string
+  ): Promise<GetTemplatesResponse> {
+    const params: Record<string, any> = {
+      page,
+      size,
+    };
+    if (category) {
+      params.category = category;
+    }
+    if (sort) {
+      params.sort = sort;
+    }
+
+    const response = await axiosInstance.get<GetTemplatesResponse>("/bots", {
+      params,
     });
+    return response.data;
   }
 
-  static async getBotById(id: string): Promise<BotDetails> {
-    // Мок-данные для одного бота
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          id,
-          title: "Чат-бот для консультаций в сфере туризма",
-          image:
-            "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80",
-          price: 11000,
-          oldPrice: 15000,
-          rating: 4.8,
-          description:
-            "Автоматизация процесса сбора контактной информации и первичных консультаций с клиентами.",
-          features:
-            "Запрос контактных данных, сбор информации о потребностях клиентов, предложение услуг.",
-          integrations: ["crm", "mailchimp", "telegram", "whatsapp"],
-          advantages:
-            "Увеличение конверсии, сокращение времени на сбор информации, повышение качества обработки лидов.",
-          tech: "Лёгкость в настройке, интеграция с маркетинговыми инструментами, возможность автоматической отправки уведомлений.",
-          usage: "Агентства, стартапы, компании, занимающиеся онлайн-рекламой.",
-          name: "Чат-бот для консультаций в сфере туризма",
-          createdAt: new Date(),
-          isActive: true,
-        });
-      }, 500);
-    });
+  static async getBotById(id: number): Promise<BotDetails> {
+    const response = await axiosInstance.get<BotDetails>(`/bots/${id}`);
+    return response.data;
   }
 }

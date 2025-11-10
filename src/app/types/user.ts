@@ -1,6 +1,14 @@
 export interface User {
-  id: string;
+  id: number;
+  username: string;
   email: string;
-  name?: string;
+  firstName: string;
+  lastName: string;
   password?: string;
+  createdAt?: string;
+  balance?: number;
+  registrationDate?: string;
+  totalSales?: number;
+  totalEarnings?: number;
+  sellerRating?: number;
 }
