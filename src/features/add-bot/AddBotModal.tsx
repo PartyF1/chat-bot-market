@@ -130,12 +130,6 @@ export const AddBotModal: React.FC<AddBotModalProps> = ({
     }
     setIsLoading(true);
     try {
-      let imageUrl = undefined;
-      if (form.image) {
-        // Имитация загрузки картинки (в реальном проекте используйте загрузку на сервер/облако)
-        imageUrl = URL.createObjectURL(form.image);
-      }
-      // Создаем бота через CatalogService
       const botDetails = await CatalogService.createBot({
         name: form.name.trim(),
         title: form.name.trim(),
@@ -149,8 +143,17 @@ export const AddBotModal: React.FC<AddBotModalProps> = ({
         isActive: true,
         advantages: form.advantages.trim(),
         tech: form.tech.trim(),
-        image: imageUrl,
       });
+
+      if (form.image) {
+        await CatalogService.uploadBotImage(botDetails.id, form.image);
+      }
+      if (form.sourceArchive) {
+        await CatalogService.uploadBotArchive(botDetails.id, form.sourceArchive);
+      }
+
+      const saved = await CatalogService.getBotById(botDetails.id);
+
       addBot({
         name: form.name.trim(),
         description: form.description.trim(),
@@ -161,17 +164,11 @@ export const AddBotModal: React.FC<AddBotModalProps> = ({
         oldPrice: form.oldPrice ? parseFloat(form.oldPrice) : undefined,
         isActive: true,
         ownerId: user.id,
-        imageUrl: imageUrl,
+        imageUrl: saved.image,
       });
       showNotification("Бот успешно добавлен в систему", "success");
       resetForm();
       onClose();
-      // Сохраняем архив по id бота в глобальное хранилище для доступа из корзины/кабинета (mock)
-      if (form.sourceArchive && botDetails.id) {
-        if ((window as any).archivesByBotId === undefined)
-          (window as any).archivesByBotId = {};
-        (window as any).archivesByBotId[botDetails.id] = form.sourceArchive;
-      }
     } catch (error: any) {
       showNotification(error.message || "Ошибка при добавлении бота", "error");
     } finally {
