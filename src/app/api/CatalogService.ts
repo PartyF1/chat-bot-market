@@ -1,11 +1,13 @@
 import axiosInstance from "./axios";
 import { TemplateCardProps } from "@entities/TemplateCard/types";
+import { resolveMediaUrl } from "@shared/config/apiUrl";
 
 export interface BotDetails {
   id: string;
   title: string;
   name: string;
   image: string;
+  archiveUrl?: string;
   price: number;
   oldPrice?: number;
   rating: number;
@@ -31,6 +33,14 @@ export interface TemplatesPage {
 const DEFAULT_IMAGE =
   "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80";
 
+function withResolvedMedia(bot: BotDetails): BotDetails {
+  return {
+    ...bot,
+    image: resolveMediaUrl(bot.image) || DEFAULT_IMAGE,
+    archiveUrl: bot.archiveUrl ? resolveMediaUrl(bot.archiveUrl) : undefined,
+  };
+}
+
 export class CatalogService {
   static async getTemplates(
     page: number = 1,
@@ -44,12 +54,15 @@ export class CatalogService {
     const paginatedBots = activeBots.slice(startIndex, startIndex + pageSize);
 
     return {
-      items: paginatedBots.map((bot) => ({
-        id: bot.id,
-        image: bot.image,
-        title: bot.title,
-        integrations: bot.integrations,
-      })),
+      items: paginatedBots.map((bot) => {
+        const normalized = withResolvedMedia(bot);
+        return {
+          id: bot.id,
+          image: normalized.image,
+          title: bot.title,
+          integrations: bot.integrations,
+        };
+      }),
       total,
       page,
       pageSize,
@@ -59,7 +72,27 @@ export class CatalogService {
 
   static async getBotById(id: string): Promise<BotDetails> {
     const { data } = await axiosInstance.get<BotDetails>(`/bots/${id}`);
-    return data;
+    return withResolvedMedia(data);
+  }
+
+  static async uploadBotImage(botId: string, file: File): Promise<string> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const { data } = await axiosInstance.post<{ image: string }>(
+      `/api/bots/${botId}/image`,
+      formData
+    );
+    return resolveMediaUrl(data.image);
+  }
+
+  static async uploadBotArchive(botId: string, file: File): Promise<string> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const { data } = await axiosInstance.post<{ archiveUrl: string }>(
+      `/api/bots/${botId}/archive`,
+      formData
+    );
+    return resolveMediaUrl(data.archiveUrl);
   }
 
   static async createBot(
@@ -93,13 +126,13 @@ export class CatalogService {
     };
 
     const { data } = await axiosInstance.post<BotDetails>("/bots", newBot);
-    return data;
+    return withResolvedMedia(data);
   }
 
   static async getBotsByOwnerId(ownerId: string): Promise<BotDetails[]> {
     const { data } = await axiosInstance.get<BotDetails[]>("/bots", {
       params: { ownerId },
     });
-    return data;
+    return data.map(withResolvedMedia);
   }
 }

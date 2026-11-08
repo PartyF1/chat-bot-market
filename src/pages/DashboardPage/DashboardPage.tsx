@@ -26,35 +26,18 @@ import {
   OrderStatus,
   EmptyState,
 } from "./DashboardPage.styled";
-import { Bot } from "@app/types/bot";
+import { botArchiveDownloadUrl } from "@shared/config/apiUrl";
+import { CatalogService } from "@app/api/CatalogService";
 import { useNavigate } from "react-router-dom";
 
-// Расширим window для мок-хранилища архивов исходников при заказе (frontend-only)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const getArchivesByBotId = () =>
-  (window as any).archivesByBotId as Record<string, File> | undefined;
-
-function getArchiveForBotId(botId: string): File | null {
-  const archiveMap = getArchivesByBotId();
-  if (archiveMap && archiveMap[botId]) return archiveMap[botId];
-  return null;
-}
-
-function downloadArchive(bot: Bot) {
-  const archive = getArchiveForBotId(bot.id);
-  if (!archive) return;
-  const url = URL.createObjectURL(archive);
+function downloadArchive(botId: string) {
   const link = document.createElement("a");
-  link.href = url;
-  link.download = bot.name
-    ? `${bot.name}-sources${archive.name.slice(archive.name.lastIndexOf("."))}`
-    : archive.name;
+  link.href = botArchiveDownloadUrl(botId);
+  link.target = "_blank";
+  link.rel = "noopener";
   document.body.appendChild(link);
   link.click();
-  setTimeout(() => {
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  }, 200);
+  document.body.removeChild(link);
 }
 
 const DashboardPage = React.memo(function DashboardPage() {
@@ -70,6 +53,9 @@ const DashboardPage = React.memo(function DashboardPage() {
   const [saving, setSaving] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [archiveByBotId, setArchiveByBotId] = useState<Record<string, boolean>>(
+    {}
+  );
 
   useEffect(() => {
     if (user) {
@@ -97,6 +83,32 @@ const DashboardPage = React.memo(function DashboardPage() {
 
     loadOrders();
   }, [user]);
+
+  useEffect(() => {
+    const ids = new Set<string>();
+    orders.forEach((order) => {
+      (Array.isArray(order.items) ? order.items : []).forEach((item) => {
+        ids.add(item.bot.id);
+      });
+    });
+    if (ids.size === 0) {
+      setArchiveByBotId({});
+      return;
+    }
+    void (async () => {
+      const entries = await Promise.all(
+        [...ids].map(async (id) => {
+          try {
+            const bot = await CatalogService.getBotById(id);
+            return [id, Boolean(bot.archiveUrl)] as const;
+          } catch {
+            return [id, false] as const;
+          }
+        })
+      );
+      setArchiveByBotId(Object.fromEntries(entries));
+    })();
+  }, [orders]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -312,8 +324,8 @@ const DashboardPage = React.memo(function DashboardPage() {
                               dimension="s"
                               appearence={ButtonAppearence.GHOST}
                               label="Скачать архив"
-                              onClick={() => downloadArchive(item.bot)}
-                              disabled={!getArchiveForBotId(item.bot.id)}
+                              onClick={() => downloadArchive(item.bot.id)}
+                              disabled={!archiveByBotId[item.bot.id]}
                             />
                           </div>
                         </OrderItem>
