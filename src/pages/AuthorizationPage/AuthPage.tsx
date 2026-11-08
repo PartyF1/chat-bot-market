@@ -52,14 +52,27 @@ export const AuthPage = React.memo(function AuthPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalError(null);
+
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedEmail || !trimmedPassword) {
+      setLocalError("Введите email и пароль");
+      return;
+    }
+
     if (isRegister) {
       if (password !== repeatPassword) {
         setLocalError("Пароли не совпадают");
         return;
       }
-      await register(email, password, name);
+      if (trimmedPassword.length < 6) {
+        setLocalError("Пароль должен быть не короче 6 символов");
+        return;
+      }
+      await register(trimmedEmail, trimmedPassword, name);
     } else {
-      await login(email, password);
+      await login(trimmedEmail, trimmedPassword);
     }
   };
 
@@ -133,7 +146,9 @@ export const AuthPage = React.memo(function AuthPage() {
             label={isRegister ? "Зарегистрироваться" : "Войти"}
             appearence={ButtonAppearence.PRIMARY}
             dimension="l"
-            disabled={isLoading}
+            disabled={
+              isLoading || !email.trim() || !password.trim()
+            }
             onClick={handleSubmit}
           />
         </Form>

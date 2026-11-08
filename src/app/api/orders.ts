@@ -1,14 +1,22 @@
 import axiosInstance from "./axios";
 import { Order } from "@app/types/order";
-import { getCookie } from "@shared/utils/cookie";
+import { getAuthToken } from "@shared/utils/cookie";
+import { ensureArray } from "@shared/utils/ensureArray";
 
 const requireAuth = () => {
-  const token = getCookie("token");
+  const token = getAuthToken();
   if (!token) {
     throw new Error("Unauthorized");
   }
   return token;
 };
+
+function normalizeOrder(order: Order): Order {
+  return {
+    ...order,
+    items: ensureArray(order.items),
+  };
+}
 
 export const ordersApi = {
   getOrdersByUserId: async (userId: string): Promise<Order[]> => {
@@ -16,14 +24,14 @@ export const ordersApi = {
     const { data } = await axiosInstance.get<Order[]>("/orders", {
       params: { userId },
     });
-    return data;
+    return ensureArray<Order>(data).map(normalizeOrder);
   },
 
   getOrderById: async (orderId: string): Promise<Order | null> => {
     requireAuth();
     try {
       const { data } = await axiosInstance.get<Order>(`/orders/${orderId}`);
-      return data;
+      return normalizeOrder(data);
     } catch {
       return null;
     }
@@ -40,7 +48,7 @@ export const ordersApi = {
     const newOrder = {
       id: String(Date.now()),
       userId,
-      items,
+      items: ensureArray(items),
       totalPrice,
       totalOldPrice,
       status: "pending" as const,
@@ -49,7 +57,7 @@ export const ordersApi = {
     };
 
     const { data } = await axiosInstance.post<Order>("/orders", newOrder);
-    return data;
+    return normalizeOrder(data);
   },
 
   completeOrder: async (orderId: string): Promise<Order> => {
@@ -58,14 +66,16 @@ export const ordersApi = {
       status: "completed",
       updatedAt: new Date().toISOString(),
     });
-    return data;
+    return normalizeOrder(data);
   },
 
   getOrdersBySellerId: async (sellerId: string): Promise<Order[]> => {
     requireAuth();
     const { data } = await axiosInstance.get<Order[]>("/orders");
-    return data.filter((order) =>
-      order.items.some((item) => item.bot.ownerId === sellerId)
-    );
+    return ensureArray<Order>(data)
+      .map(normalizeOrder)
+      .filter((order) =>
+        order.items.some((item) => item.bot?.ownerId === sellerId)
+      );
   },
 };

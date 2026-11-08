@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "concurrently -k \"npm:server\" \"npm:client\"",
     "client": "vite",
-    "server": "json-server --watch db.json --port 8080",
+    "server": "node server.cjs",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"

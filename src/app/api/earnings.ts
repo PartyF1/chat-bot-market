@@ -1,4 +1,4 @@
-import { getCookie } from "@shared/utils/cookie";
+import { getAuthToken } from "@shared/utils/cookie";
 import { ordersApi } from "./orders";
 
 export interface SellerEarnings {
@@ -14,7 +14,7 @@ export interface SellerEarnings {
 
 export const earningsApi = {
   getSellerEarnings: async (sellerId: string): Promise<SellerEarnings> => {
-    const token = getCookie("token");
+    const token = getAuthToken();
     if (!token) {
       throw new Error("Unauthorized");
     }

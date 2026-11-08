@@ -86,9 +86,10 @@ const DashboardPage = React.memo(function DashboardPage() {
       setLoading(true);
       try {
         const userOrders = await ordersApi.getOrdersByUserId(user.id);
-        setOrders(userOrders);
+        setOrders(Array.isArray(userOrders) ? userOrders : []);
       } catch (e: any) {
         console.error("Error loading orders:", e);
+        setOrders([]);
       } finally {
         setLoading(false);
       }
@@ -176,7 +177,23 @@ const DashboardPage = React.memo(function DashboardPage() {
   }
 
   if (!user) {
-    return null;
+    return (
+      <PageWrapper>
+        <ContentWrapper>
+          <EmptyState>
+            Сессия недействительна. Войдите снова.
+          </EmptyState>
+          <FormRow>
+            <Button
+              label="На страницу входа"
+              appearence={ButtonAppearence.PRIMARY}
+              dimension="m"
+              onClick={() => navigate("/auth", { replace: true })}
+            />
+          </FormRow>
+        </ContentWrapper>
+      </PageWrapper>
+    );
   }
 
   return (
@@ -277,7 +294,8 @@ const DashboardPage = React.memo(function DashboardPage() {
                       </OrderStatus>
                     </OrderHeader>
                     <OrderItems>
-                      {order.items.map((item, index) => (
+                      {(Array.isArray(order.items) ? order.items : []).map(
+                        (item, index) => (
                         <OrderItem key={index}>
                           <div>
                             <strong>{item.bot.name}</strong>
@@ -299,7 +317,8 @@ const DashboardPage = React.memo(function DashboardPage() {
                             />
                           </div>
                         </OrderItem>
-                      ))}
+                      )
+                      )}
                     </OrderItems>
                     <div
                       style={{

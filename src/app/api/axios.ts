@@ -1,7 +1,12 @@
 import axios from "axios";
-import { getCookie, deleteCookie } from "@shared/utils/cookie";
+import {
+  getAuthToken,
+  deleteCookie,
+  AUTH_COOKIE_NAME,
+} from "@shared/utils/cookie";
+import { resolveApiUrl } from "@shared/config/apiUrl";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+const API_URL = resolveApiUrl();
 
 const axiosInstance = axios.create({
   baseURL: API_URL,
@@ -12,7 +17,7 @@ const axiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = getCookie("token");
+    const token = getAuthToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -29,7 +34,7 @@ axiosInstance.interceptors.response.use(
   },
   (error) => {
     if (error.response && error.response.status === 401) {
-      deleteCookie("token");
+      deleteCookie(AUTH_COOKIE_NAME);
     }
     return Promise.reject(error);
   }
