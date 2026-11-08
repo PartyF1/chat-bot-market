@@ -57,7 +57,7 @@ export const BotAnalyticsPage: React.FC = () => {
               price: botFromCatalog.price,
               oldPrice: botFromCatalog.oldPrice,
               imageUrl: botFromCatalog.image,
-              createdAt: botFromCatalog.createdAt,
+              createdAt: new Date(botFromCatalog.createdAt),
               isActive: botFromCatalog.isActive,
               ownerId: botFromCatalog.ownerId,
               features: botFromCatalog.features,

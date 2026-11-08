@@ -1,3 +1,4 @@
+import axiosInstance from "./axios";
 import { TemplateCardProps } from "@entities/TemplateCard/types";
 
 export interface BotDetails {
@@ -14,50 +15,51 @@ export interface BotDetails {
   advantages: string;
   tech: string;
   usage: string;
-  createdAt: Date;
+  createdAt: string;
   isActive: boolean;
-  ownerId: string; // ID пользователя, который создал бота
+  ownerId: string;
 }
 
-// Simulate API delay
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+export interface TemplatesPage {
+  items: TemplateCardProps[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
 
-// Mock database for bots
-const mockBots: BotDetails[] = [];
+const DEFAULT_IMAGE =
+  "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80";
 
 export class CatalogService {
   static async getTemplates(
     page: number = 1,
     pageSize: number = 10
-  ): Promise<TemplateCardProps[]> {
-    await delay(500);
-
-    // Преобразуем все активные боты из mockBots в TemplateCardProps
-    const activeBots = mockBots.filter((bot) => bot.isActive);
-
-    // Применяем пагинацию
+  ): Promise<TemplatesPage> {
+    const { data } = await axiosInstance.get<BotDetails[]>("/bots");
+    const activeBots = data.filter((bot) => bot.isActive);
+    const total = activeBots.length;
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
     const startIndex = (page - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    const paginatedBots = activeBots.slice(startIndex, endIndex);
+    const paginatedBots = activeBots.slice(startIndex, startIndex + pageSize);
 
-    // Преобразуем BotDetails в TemplateCardProps
-    return paginatedBots.map((bot) => ({
-      id: bot.id,
-      image: bot.image,
-      title: bot.title,
-      integrations: bot.integrations,
-    }));
+    return {
+      items: paginatedBots.map((bot) => ({
+        id: bot.id,
+        image: bot.image,
+        title: bot.title,
+        integrations: bot.integrations,
+      })),
+      total,
+      page,
+      pageSize,
+      totalPages: total === 0 ? 0 : totalPages,
+    };
   }
 
   static async getBotById(id: string): Promise<BotDetails> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const bot = mockBots.find((b) => b.id === id);
-        if (bot) {
-          resolve(bot);
-        }
-      }, 500);
-    });
+    const { data } = await axiosInstance.get<BotDetails>(`/bots/${id}`);
+    return data;
   }
 
   static async createBot(
@@ -71,15 +73,11 @@ export class CatalogService {
       rating?: number;
     }
   ): Promise<BotDetails> {
-    await delay(1000);
-
-    const newBot: BotDetails = {
+    const newBot: Omit<BotDetails, "id"> & { id?: string } = {
       id: String(Date.now()),
       title: botData.title || botData.name,
       name: botData.name,
-      image:
-        botData.image ||
-        "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80",
+      image: botData.image || DEFAULT_IMAGE,
       price: botData.price || 0,
       oldPrice: botData.oldPrice,
       rating: botData.rating || 0,
@@ -89,17 +87,19 @@ export class CatalogService {
       advantages: botData.advantages || "",
       tech: botData.tech || "",
       usage: botData.usage || "",
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
       isActive: botData.isActive ?? true,
       ownerId: botData.ownerId,
     };
 
-    mockBots.push(newBot);
-    return newBot;
+    const { data } = await axiosInstance.post<BotDetails>("/bots", newBot);
+    return data;
   }
 
   static async getBotsByOwnerId(ownerId: string): Promise<BotDetails[]> {
-    await delay(500);
-    return mockBots.filter((bot) => bot.ownerId === ownerId);
+    const { data } = await axiosInstance.get<BotDetails[]>("/bots", {
+      params: { ownerId },
+    });
+    return data;
   }
 }

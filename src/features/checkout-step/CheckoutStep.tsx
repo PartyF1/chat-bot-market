@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useCart } from "@app/providers/CartProvider";
+import { useAuth } from "@app/providers/AuthProvider/AuthProvider";
 import { CatalogService, BotDetails } from "@app/api/CatalogService";
 import { PageLoader } from "@shared/ui/PageLoader";
 import { TextField } from "@shared/ui/TextField/TextField";
@@ -33,18 +34,28 @@ interface CheckoutStepProps {
 
 const CheckoutStep = ({ onNextStep, onPrevStep }: CheckoutStepProps) => {
   const { items, totalPrice, totalDiscount, totalOldPrice } = useCart();
+  const { user } = useAuth();
   const [cartItems, setCartItems] = useState<
     (BotDetails & { quantity: number })[]
   >([]);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
-    email: "",
-    firstName: "",
+    email: user?.email || "",
+    firstName: user?.name || "",
     lastName: "",
     organization: "",
     address: "",
     chatbotLink: "",
   });
+
+  useEffect(() => {
+    if (!user) return;
+    setFormData((prev) => ({
+      ...prev,
+      email: prev.email || user.email || "",
+      firstName: prev.firstName || user.name || "",
+    }));
+  }, [user]);
 
   useEffect(() => {
     const loadCartItems = async () => {

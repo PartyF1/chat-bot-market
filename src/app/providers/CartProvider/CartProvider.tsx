@@ -1,5 +1,12 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
 import { Bot } from "@app/types/bot";
+import { getJSON, setJSON } from "@shared/utils/localStorage";
 
 interface CartItem {
   bot: Bot;
@@ -18,12 +25,31 @@ interface CartContextType {
   totalDiscount?: number;
 }
 
+const CART_STORAGE_KEY = "cbm_cart";
+
 const CartContext = createContext<CartContextType | undefined>(undefined);
+
+const reviveCartItems = (items: CartItem[]): CartItem[] =>
+  items.map((item) => ({
+    ...item,
+    bot: {
+      ...item.bot,
+      createdAt: item.bot.createdAt
+        ? new Date(item.bot.createdAt)
+        : new Date(),
+    },
+  }));
 
 export const CartProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [items, setItems] = useState<CartItem[]>(() =>
+    reviveCartItems(getJSON<CartItem[]>(CART_STORAGE_KEY, []))
+  );
+
+  useEffect(() => {
+    setJSON(CART_STORAGE_KEY, items);
+  }, [items]);
 
   const addToCart = (bot: Bot) => {
     setItems((currentItems) => {
