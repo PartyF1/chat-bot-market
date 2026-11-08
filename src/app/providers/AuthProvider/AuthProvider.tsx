@@ -3,11 +3,17 @@ import React, {
   useContext,
   useState,
   useEffect,
+  useCallback,
   ReactNode,
 } from "react";
 import { authApi } from "@app/api/auth";
 import { User } from "@app/types/user";
-import { setCookie, deleteCookie } from "@shared/utils/cookie";
+import {
+  deleteCookie,
+  getAuthToken,
+  persistAuthToken,
+  AUTH_COOKIE_NAME,
+} from "@shared/utils/cookie";
 
 interface AuthContextType {
   user: User | null;
@@ -22,36 +28,82 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const isSessionActive = (user: User | null): boolean => {
+  if (!user?.id) return false;
+  const token = getAuthToken();
+  return token === user.id;
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const clearSession = useCallback(() => {
+    setUser(null);
+    deleteCookie(AUTH_COOKIE_NAME);
+  }, []);
+
+  const syncSessionWithCookie = useCallback(() => {
+    const token = getAuthToken();
+    if (!token) {
+      setUser((current) => (current ? null : current));
+      return;
+    }
+    setUser((current) => {
+      if (!current) return null;
+      return current.id === token ? current : null;
+    });
+  }, []);
+
   useEffect(() => {
     const initializeUser = async () => {
       setIsLoading(true);
       try {
+        const token = getAuthToken();
+        if (!token) {
+          clearSession();
+          return;
+        }
         const currentUser = await authApi.getCurrentUser();
+        if (!currentUser || currentUser.id !== token) {
+          clearSession();
+          return;
+        }
         setUser(currentUser);
       } catch {
-        setUser(null);
+        clearSession();
       } finally {
         setIsLoading(false);
       }
     };
     initializeUser();
-  }, []);
+  }, [clearSession]);
+
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        syncSessionWithCookie();
+      }
+    };
+    window.addEventListener("focus", syncSessionWithCookie);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("focus", syncSessionWithCookie);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [syncSessionWithCookie]);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     setError(null);
     try {
       const loggedInUser = await authApi.login(email, password);
+      persistAuthToken(loggedInUser.id);
       setUser(loggedInUser);
-      setCookie("token", loggedInUser.id, 7);
     } catch (e: any) {
       setError(e.message || "Ошибка входа");
-      setUser(null);
+      clearSession();
     } finally {
       setIsLoading(false);
     }
@@ -62,8 +114,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setError(null);
     try {
       await authApi.logout();
-      setUser(null);
-      deleteCookie("token");
+      clearSession();
     } catch (e: any) {
       setError(e.message || "Ошибка выхода");
     } finally {
@@ -76,11 +127,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setError(null);
     try {
       const registeredUser = await authApi.register(email, password, name);
+      persistAuthToken(registeredUser.id);
       setUser(registeredUser);
-      setCookie("token", registeredUser.id, 7);
     } catch (e: any) {
       setError(e.message || "Ошибка регистрации");
-      setUser(null);
+      clearSession();
     } finally {
       setIsLoading(false);
     }
@@ -106,7 +157,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: !!user,
+        isAuthenticated: isSessionActive(user),
         isLoading,
         error,
         login,
