@@ -37,8 +37,15 @@ export const AuthPage = React.memo(function AuthPage() {
 
   React.useEffect(() => {
     if (isAuthenticated) {
-      const from = location.state?.from?.pathname || "/";
-      navigate(from, { replace: true });
+      const from = location.state?.from;
+      if (from?.pathname) {
+        navigate(from.pathname, {
+          replace: true,
+          state: from.step ? { step: from.step } : undefined,
+        });
+      } else {
+        navigate("/", { replace: true });
+      }
     }
   }, [isAuthenticated, navigate, location]);
 

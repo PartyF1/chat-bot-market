@@ -1,59 +1,32 @@
+import axiosInstance from "./axios";
 import { Order } from "@app/types/order";
 import { getCookie } from "@shared/utils/cookie";
 
-// Simulate API delay
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-// Mock orders database
-const mockOrders: Order[] = [
-  {
-    id: "1",
-    userId: "1",
-    items: [
-      {
-        bot: {
-          id: "1",
-          name: "Telegram Bot",
-          description: "Test bot",
-          price: 1000,
-          oldPrice: 1500,
-          createdAt: new Date(),
-          isActive: true,
-          ownerId: "1",
-          features:
-            "Запрос контактных данных, сбор информации о потребностях клиентов.",
-          integrations: ["telegram", "whatsapp"],
-          usage: "Агентства, стартапы, компании.",
-        },
-        quantity: 1,
-        price: 1000,
-      },
-    ],
-    totalPrice: 1000,
-    totalOldPrice: 1500,
-    status: "completed",
-    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
-    updatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-  },
-];
+const requireAuth = () => {
+  const token = getCookie("token");
+  if (!token) {
+    throw new Error("Unauthorized");
+  }
+  return token;
+};
 
 export const ordersApi = {
   getOrdersByUserId: async (userId: string): Promise<Order[]> => {
-    await delay(500);
-    const token = getCookie("token");
-    if (!token) {
-      throw new Error("Unauthorized");
-    }
-    return mockOrders.filter((order) => order.userId === userId);
+    requireAuth();
+    const { data } = await axiosInstance.get<Order[]>("/orders", {
+      params: { userId },
+    });
+    return data;
   },
 
   getOrderById: async (orderId: string): Promise<Order | null> => {
-    await delay(500);
-    const token = getCookie("token");
-    if (!token) {
-      throw new Error("Unauthorized");
+    requireAuth();
+    try {
+      const { data } = await axiosInstance.get<Order>(`/orders/${orderId}`);
+      return data;
+    } catch {
+      return null;
     }
-    return mockOrders.find((order) => order.id === orderId) || null;
   },
 
   createOrder: async (
@@ -62,53 +35,36 @@ export const ordersApi = {
     totalPrice: number,
     totalOldPrice?: number
   ): Promise<Order> => {
-    await delay(1000);
-    const token = getCookie("token");
-    if (!token) {
-      throw new Error("Unauthorized");
-    }
+    requireAuth();
 
-    const newOrder: Order = {
-      id: String(mockOrders.length + 1),
+    const newOrder = {
+      id: String(Date.now()),
       userId,
       items,
       totalPrice,
       totalOldPrice,
-      status: "pending",
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      status: "pending" as const,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
-    mockOrders.push(newOrder);
-    return newOrder;
+    const { data } = await axiosInstance.post<Order>("/orders", newOrder);
+    return data;
   },
 
   completeOrder: async (orderId: string): Promise<Order> => {
-    await delay(500);
-    const token = getCookie("token");
-    if (!token) {
-      throw new Error("Unauthorized");
-    }
-
-    const order = mockOrders.find((o) => o.id === orderId);
-    if (!order) {
-      throw new Error("Order not found");
-    }
-
-    order.status = "completed";
-    order.updatedAt = new Date();
-    return order;
+    requireAuth();
+    const { data } = await axiosInstance.patch<Order>(`/orders/${orderId}`, {
+      status: "completed",
+      updatedAt: new Date().toISOString(),
+    });
+    return data;
   },
 
   getOrdersBySellerId: async (sellerId: string): Promise<Order[]> => {
-    await delay(500);
-    const token = getCookie("token");
-    if (!token) {
-      throw new Error("Unauthorized");
-    }
-
-    // Находим заказы, где хотя бы один бот принадлежит продавцу
-    return mockOrders.filter((order) =>
+    requireAuth();
+    const { data } = await axiosInstance.get<Order[]>("/orders");
+    return data.filter((order) =>
       order.items.some((item) => item.bot.ownerId === sellerId)
     );
   },

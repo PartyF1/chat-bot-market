@@ -1,0 +1,84 @@
+{
+  "bots": [
+    {
+      "id": "1794158914868",
+      "title": "1",
+      "name": "1",
+      "image": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80",
+      "price": 0,
+      "rating": 0,
+      "description": "1",
+      "features": "1",
+      "integrations": [
+        "vk"
+      ],
+      "advantages": "1",
+      "tech": "1",
+      "usage": "1",
+      "createdAt": "2026-11-08T17:28:34.868Z",
+      "isActive": true,
+      "ownerId": "1"
+    },
+    {
+      "id": "1794161424695",
+      "title": "Test",
+      "name": "Test",
+      "image": "blob:http://localhost:5173/7e1033d9-582f-42e8-8596-620714124ea8",
+      "price": 10002,
+      "oldPrice": 15000,
+      "rating": 0,
+      "description": "Test",
+      "features": "Test",
+      "integrations": [
+        "instagram",
+        "telegram",
+        "whatsapp"
+      ],
+      "advantages": "test",
+      "tech": "test",
+      "usage": "test",
+      "createdAt": "2026-11-08T18:10:24.695Z",
+      "isActive": true,
+      "ownerId": "1"
+    }
+  ],
+  "users": [
+    {
+      "id": "1",
+      "email": "test@example.com",
+      "name": "Test User",
+      "password": "password123"
+    }
+  ],
+  "orders": [
+    {
+      "id": "1794158979254",
+      "userId": "1",
+      "items": [
+        {
+          "bot": {
+            "id": "1794158914868",
+            "name": "1",
+            "description": "1",
+            "price": 0,
+            "createdAt": "2026-11-08T17:28:34.868Z",
+            "isActive": true,
+            "ownerId": "1",
+            "features": "1",
+            "integrations": [
+              "vk"
+            ],
+            "usage": "1"
+          },
+          "quantity": 1,
+          "price": 0
+        }
+      ],
+      "totalPrice": 0,
+      "totalOldPrice": 0,
+      "status": "completed",
+      "createdAt": "2026-11-08T17:29:39.254Z",
+      "updatedAt": "2026-11-08T17:29:39.290Z"
+    }
+  ]
+}

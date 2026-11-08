@@ -1,32 +1,18 @@
+import axiosInstance from "./axios";
 import { User } from "@app/types/user";
 import { getCookie } from "@shared/utils/cookie";
 
-// Simulate API delay
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-// Mock user database
-const mockUsers: User[] = [
-  {
-    id: "1",
-    email: "test@example.com",
-    name: "Test User",
-    password: "password123", // In real app, this would be hashed
-  },
-];
-
 export const authApi = {
   login: async (email: string, password: string): Promise<User> => {
-    await delay(1000); // Simulate network delay
+    const { data: users } = await axiosInstance.get<User[]>("/users", {
+      params: { email, password },
+    });
 
-    const user = mockUsers.find(
-      (u) => u.email === email && u.password === password
-    );
-
+    const user = users[0];
     if (!user) {
       throw new Error("Invalid email or password");
     }
 
-    // Don't return password in response
     const { password: _, ...userWithoutPassword } = user;
     return userWithoutPassword;
   },
@@ -36,64 +22,50 @@ export const authApi = {
     password: string,
     name?: string
   ): Promise<User> => {
-    await delay(1000);
+    const { data: existing } = await axiosInstance.get<User[]>("/users", {
+      params: { email },
+    });
 
-    // Check if user already exists
-    if (mockUsers.some((u) => u.email === email)) {
+    if (existing.length > 0) {
       throw new Error("User with this email already exists");
     }
 
-    const newUser: User = {
-      id: String(mockUsers.length + 1),
+    const newUser = {
+      id: String(Date.now()),
       email,
       password,
       name,
     };
 
-    mockUsers.push(newUser);
-
-    // Don't return password in response
-    const { password: _, ...userWithoutPassword } = newUser;
+    const { data } = await axiosInstance.post<User>("/users", newUser);
+    const { password: _, ...userWithoutPassword } = data;
     return userWithoutPassword;
   },
 
   logout: async (): Promise<void> => {
-    await delay(500);
-    // In a real app, this would invalidate the session/token
     return;
   },
 
   getCurrentUser: async (): Promise<User | null> => {
-    await delay(500);
-    const token = getCookie("token");
-    if (!token) {
+    const userId = getCookie("token");
+    if (!userId) {
       return null;
     }
-    // In a real app, this would validate the session/token and return user data
-    // For now, we'll return a mock user if a token exists
-    return {
-      id: "1",
-      email: "test@example.com",
-      name: "Test User",
-    };
+
+    try {
+      const { data } = await axiosInstance.get<User>(`/users/${userId}`);
+      const { password: _, ...userWithoutPassword } = data;
+      return userWithoutPassword;
+    } catch {
+      return null;
+    }
   },
 
   updateProfile: async (userId: string, data: Partial<User>): Promise<User> => {
-    await delay(1000);
-
-    const userIndex = mockUsers.findIndex((u) => u.id === userId);
-    if (userIndex === -1) {
-      throw new Error("User not found");
-    }
-
-    const updatedUser = {
-      ...mockUsers[userIndex],
-      ...data,
-    };
-
-    mockUsers[userIndex] = updatedUser;
-
-    // Don't return password in response
+    const { data: updatedUser } = await axiosInstance.patch<User>(
+      `/users/${userId}`,
+      data
+    );
     const { password: _, ...userWithoutPassword } = updatedUser;
     return userWithoutPassword;
   },

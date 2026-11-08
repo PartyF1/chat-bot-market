@@ -7,7 +7,7 @@ import React, {
 } from "react";
 import { authApi } from "@app/api/auth";
 import { User } from "@app/types/user";
-import { setCookie, getCookie, deleteCookie } from "@shared/utils/cookie";
+import { setCookie, deleteCookie } from "@shared/utils/cookie";
 
 interface AuthContextType {
   user: User | null;
@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         const currentUser = await authApi.getCurrentUser();
         setUser(currentUser);
-      } catch (e) {
+      } catch {
         setUser(null);
       } finally {
         setIsLoading(false);
@@ -48,12 +48,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const loggedInUser = await authApi.login(email, password);
       setUser(loggedInUser);
-      setCookie("token", "mock-token", 7); // Store token in a cookie for 7 days
+      setCookie("token", loggedInUser.id, 7);
     } catch (e: any) {
       setError(e.message || "Ошибка входа");
       setUser(null);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const logout = async () => {
@@ -65,8 +66,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       deleteCookie("token");
     } catch (e: any) {
       setError(e.message || "Ошибка выхода");
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const register = async (email: string, password: string, name?: string) => {
@@ -75,12 +77,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const registeredUser = await authApi.register(email, password, name);
       setUser(registeredUser);
-      setCookie("token", "mock-token", 7); // Store token in a cookie for 7 days
+      setCookie("token", registeredUser.id, 7);
     } catch (e: any) {
       setError(e.message || "Ошибка регистрации");
       setUser(null);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const updateProfile = async (data: Partial<User>) => {
@@ -94,8 +97,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(updatedUser);
     } catch (e: any) {
       setError(e.message || "Ошибка обновления профиля");
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (

@@ -33,10 +33,17 @@ const BotDetailsPage = React.memo(() => {
   useEffect(() => {
     if (!id) return;
     setLoading(true);
-    CatalogService.getBotById(id).then((data) => {
-      setBot(data);
-      setLoading(false);
-    });
+    CatalogService.getBotById(id)
+      .then((data) => {
+        setBot(data);
+      })
+      .catch((error) => {
+        console.error("Error loading bot:", error);
+        setBot(null);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [id]);
 
   const handleAddToCart = () => {
@@ -49,7 +56,7 @@ const BotDetailsPage = React.memo(() => {
         price: bot.price,
         oldPrice: bot.oldPrice,
         imageUrl: bot.image,
-        createdAt: bot.createdAt,
+        createdAt: new Date(bot.createdAt),
         isActive: bot.isActive,
         ownerId: bot.ownerId,
         features: bot.features,

@@ -27,6 +27,7 @@ import {
   EmptyState,
 } from "./DashboardPage.styled";
 import { Bot } from "@app/types/bot";
+import { useNavigate } from "react-router-dom";
 
 // Расширим window для мок-хранилища архивов исходников при заказе (frontend-only)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -57,7 +58,8 @@ function downloadArchive(bot: Bot) {
 }
 
 const DashboardPage = React.memo(function DashboardPage() {
-  const { user, updateProfile, isLoading: authLoading } = useAuth();
+  const { user, updateProfile, logout, isLoading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -66,6 +68,7 @@ const DashboardPage = React.memo(function DashboardPage() {
     email: user?.email || "",
   });
   const [saving, setSaving] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -124,6 +127,16 @@ const DashboardPage = React.memo(function DashboardPage() {
     setError(null);
   };
 
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await logout();
+      navigate("/auth", { replace: true });
+    } finally {
+      setLoggingOut(false);
+    }
+  };
+
   const getStatusText = (status: Order["status"]) => {
     switch (status) {
       case "pending":
@@ -150,7 +163,7 @@ const DashboardPage = React.memo(function DashboardPage() {
     }
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleDateString("ru-RU", {
       year: "numeric",
       month: "long",
@@ -225,6 +238,13 @@ const DashboardPage = React.memo(function DashboardPage() {
                     appearence={ButtonAppearence.PRIMARY}
                     dimension="m"
                     onClick={() => setIsEditing(true)}
+                  />
+                  <Button
+                    label="Выйти"
+                    appearence={ButtonAppearence.GHOST}
+                    dimension="m"
+                    onClick={handleLogout}
+                    disabled={loggingOut}
                   />
                 </FormRow>
               )}

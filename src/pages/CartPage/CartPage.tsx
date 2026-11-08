@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { CartContent, CartPageContainer } from "./CartPage.style";
 import CartSummary from "@features/cart-summary";
 import CheckoutStep from "@features/checkout-step";
 import PaymentStep from "@features/payment-step";
 import { TabBar } from "@features/tab-bar/TabBar";
+import { useAuth } from "@app/providers/AuthProvider/AuthProvider";
 
 const STEPS = [
   { id: "cart", label: "Корзина" },
@@ -12,9 +14,29 @@ const STEPS = [
 ];
 
 const CartPage = React.memo(() => {
-  const [currentStep, setCurrentStep] = useState("cart");
+  const location = useLocation();
+  const { isAuthenticated } = useAuth();
+  const initialStep =
+    (location.state as { step?: string } | null)?.step === "checkout" &&
+    isAuthenticated
+      ? "checkout"
+      : "cart";
+  const [currentStep, setCurrentStep] = useState(initialStep);
+
+  useEffect(() => {
+    const step = (location.state as { step?: string } | null)?.step;
+    if (step === "checkout" && isAuthenticated) {
+      setCurrentStep("checkout");
+    }
+  }, [location.state, isAuthenticated]);
 
   const handleStepClick = (stepId: string) => {
+    if (
+      (stepId === "checkout" || stepId === "payment") &&
+      !isAuthenticated
+    ) {
+      return;
+    }
     setCurrentStep(stepId);
   };
 

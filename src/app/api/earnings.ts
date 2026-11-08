@@ -1,9 +1,6 @@
 import { getCookie } from "@shared/utils/cookie";
 import { ordersApi } from "./orders";
 
-// Simulate API delay
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 export interface SellerEarnings {
   totalEarnings: number;
   totalSales: number;
@@ -17,21 +14,16 @@ export interface SellerEarnings {
 
 export const earningsApi = {
   getSellerEarnings: async (sellerId: string): Promise<SellerEarnings> => {
-    await delay(500);
     const token = getCookie("token");
     if (!token) {
       throw new Error("Unauthorized");
     }
 
-    // Получаем все заказы продавца
     const orders = await ordersApi.getOrdersBySellerId(sellerId);
-
-    // Фильтруем только завершенные заказы
     const completedOrders = orders.filter(
       (order) => order.status === "completed"
     );
 
-    // Подсчитываем общий заработок и количество продаж
     let totalEarnings = 0;
     let totalSales = 0;
     const earningsByBotMap = new Map<

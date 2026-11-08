@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useCart } from "@app/providers/CartProvider";
+import { useAuth } from "@app/providers/AuthProvider/AuthProvider";
+import { useNotification } from "@app/providers/NotificationProvider";
 import { CatalogService, BotDetails } from "@app/api/CatalogService";
 import { PageLoader } from "@shared/ui/PageLoader";
 import { Button } from "@shared/ui/Button/Button";
@@ -36,11 +38,27 @@ const CartSummary = ({ onNextStep }: CartSummaryProps) => {
     totalDiscount,
     totalOldPrice,
   } = useCart();
+  const { isAuthenticated } = useAuth();
+  const { showNotification } = useNotification();
   const navigate = useNavigate();
   const [cartItems, setCartItems] = useState<
     (BotDetails & { quantity: number })[]
   >([]);
   const [loading, setLoading] = useState(true);
+
+  const handleCheckout = () => {
+    if (!isAuthenticated) {
+      showNotification(
+        "Войдите или зарегистрируйтесь, чтобы оформить заказ",
+        "error"
+      );
+      navigate("/auth", {
+        state: { from: { pathname: "/cart", step: "checkout" } },
+      });
+      return;
+    }
+    onNextStep();
+  };
 
   useEffect(() => {
     const loadCartItems = async () => {
@@ -161,7 +179,7 @@ const CartSummary = ({ onNextStep }: CartSummaryProps) => {
               label="Перейти к оформлению"
               appearence={ButtonAppearence.PRIMARY}
               dimension="l"
-              onClick={onNextStep}
+              onClick={handleCheckout}
               disabled={cartItems.length === 0}
             />
           </RightPanel>
